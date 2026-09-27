@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block titulo %}Boquillas - HRAS{% endblock %}
+
+{% block contenido %}
+
+  <!-- ================= EDITOR DE BOQUILLA ================= -->
+  <div class="card">
+    <h2>📢 Boquillas</h2>
+    <p class="vista-previa-nota">
+      Escribe un mensaje informativo previo. Se mostrará enmarcado entre los parlantes.
+      Puedes copiarlo al instante o guardarlo en el historial (con un nombre) para reutilizarlo después.
+    </p>
+
+    <div class="boquilla-editor">
+      <div class="boquilla-banner">📢 Nos permitimos informar que:</div>
+
+      <textarea id="boquillaTexto" rows="4" placeholder="Escribe aquí el mensaje..."></textarea>
+
+      <!-- Vista previa del mensaje completo (banner + texto + parlante final). -->
+      <div class="boquilla-preview" id="boquillaPreview"></div>
+
+      <div class="boquilla-acciones">
+        <button type="button" class="btn" id="btnCopiar">📋 Copiar</button>
+
+        <!-- Guardar en el historial (formulario al servidor). -->
+        <form method="post" id="formGuardar" style="display:inline;">
+          {% csrf_token %}
+          <input type="hidden" name="accion" value="guardar">
+          <input type="hidden" name="nombre" id="inputGuardarNombre">
+          <input type="hidden" name="texto" id="inputGuardarTexto">
+          <button type="submit" class="btn btn-verde">💾 Guardar en historial</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= HISTORIAL DE BOQUILLAS ================= -->
+  <div class="card">
+    <h2>Historial de boquillas</h2>
+
+    {% if historial %}
+      <ul class="boquilla-historial">
+        {% for b in historial %}
+          <li class="boquilla-item" data-id="{{ b.id }}">
+            <!-- Nombre editable: doble clic para renombrar. -->
+            <div class="boquilla-item-nombre"
+                 title="Doble clic para renombrar"
+                 data-nombre="{{ b.nombre }}">{{ b.nombre|default:"(sin nombre)" }}</div>
+            <!-- data-texto guarda el mensaje enmarcado listo para copiar (parlante al final). -->
+            <div class="boquilla-item-texto" data-texto="📢 Nos permitimos informar que:&#10;{{ b.texto }} 📢">{{ b.texto }}</div>
+            <div class="boquilla-item-fecha">🕐 {{ b.fecha_creacion|date:"d/m/Y H:i" }}</div>
+            <div class="boquilla-item-acciones">
+              <button type="button" class="btn btn-secundario btnCopiarItem">📋 Copiar</button>
+              <button type="button" class="btn btn-secundario btnRenombrar">✏️ Renombrar</button>
+              <form method="post" style="display:inline;" onsubmit="return confirm('¿Eliminar esta boquilla del historial?');">
+                {% csrf_token %}
+                <input type="hidden" name="accion" value="eliminar">
+                <input type="hidden" name="boquilla_id" value="{{ b.id }}">
+                <button type="submit" class="btn btn-rojo">🗑️ Eliminar</button>
+              </form>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="boquilla-vacio">Aún no hay boquillas guardadas. Escribe una arriba y guárdala.</p>
+    {% endif %}
+
+    <div style="margin-top:16px;">
+      <a href="{% url 'inicio' %}" class="btn btn-secundario">← Volver al inicio</a>
+    </div>
+  </div>
+
+  <script src="{% static 'boquillas.js' %}?v=3"></script>
+{% endblock %}

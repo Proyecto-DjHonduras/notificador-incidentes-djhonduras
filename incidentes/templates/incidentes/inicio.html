@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Inicio - HRAS{% endblock %}
+
+{% block contenido %}
+  <div class="inicio-tarjetas">
+
+    <!-- Tarjeta 1: Crear Notificacion -->
+    <a href="{% url 'crear' %}" class="tarjeta">
+      <div class="tarjeta-icono">➕</div>
+      <h3>Crear Notificación</h3>
+      <p>Registrar una nueva falla y generar la notificación inicial.</p>
+    </a>
+
+    <!-- Tarjeta 2: Incidentes / Notificaciones activas -->
+    <a href="{% url 'lista' %}" class="tarjeta">
+      <div class="tarjeta-icono">📋</div>
+      <h3>Notificaciones</h3>
+      <p>Dar continuidad, agregar avances y cerrar incidentes en curso.</p>
+    </a>
+
+    <!-- Tarjeta 3: Boquillas (mensajes informativos previos) -->
+    <a href="{% url 'boquillas' %}" class="tarjeta">
+      <div class="tarjeta-icono">📢</div>
+      <h3>Boquillas</h3>
+      <p>Redactar y guardar mensajes informativos previos para reutilizarlos.</p>
+    </a>
+
+    <!-- Tarjeta 3 (Dashboard) oculta por ahora; se reactivara mas adelante.
+    <a href="{% url 'dashboard' %}" class="tarjeta">
+      <div class="tarjeta-icono">📊</div>
+      <h3>Dashboard Gerencial</h3>
+      <p>Vista general con el estado de todos los incidentes.</p>
+    </a>
+    -->
+
+  </div>
+{% endblock %}

@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block titulo %}Ver #{{ incidente.id }} - HRAS{% endblock %}
+
+{% block contenido %}
+  <!-- ============================================================ -->
+  <!-- FORMULARIO EDITABLE (datos base: incidente, ticket, areas, personas...) -->
+  <!-- ============================================================ -->
+  <div class="card">
+    <h2>Notificación: {{ incidente.ticket|default:"Por generarse" }} - {{ incidente.incidente }}</h2>
+
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="accion" value="guardar_datos">
+
+      <div class="form-grid">
+        <div class="form-item full">{{ formulario.incidente.label_tag }} {{ formulario.incidente }}</div>
+
+        <div class="form-item">{{ formulario.ticket.label_tag }} {{ formulario.ticket }}</div>
+        <div class="form-item">{{ formulario.hora_inicio.label_tag }} {{ formulario.hora_inicio }}</div>
+
+        <div class="form-item">{{ formulario.prioridad.label_tag }} {{ formulario.prioridad }}</div>
+        <div class="form-item">{{ formulario.estado.label_tag }} {{ formulario.estado }}</div>
+
+        <div class="form-item">{{ formulario.afectacion_cliente.label_tag }} {{ formulario.afectacion_cliente }}</div>
+        <div class="form-item">{{ formulario.como_se_detecto.label_tag }} {{ formulario.como_se_detecto }}</div>
+
+        <div class="form-item">{{ formulario.reporte_inicial.label_tag }} {{ formulario.reporte_inicial }}</div>
+        <div class="form-item">{{ formulario.asignado_a.label_tag }} {{ formulario.asignado_a }}</div>
+
+        <div class="form-item full">{{ formulario.descripcion.label_tag }} {{ formulario.descripcion }}</div>
+
+        <div class="form-item">{{ formulario.personas_texto.label_tag }} {{ formulario.personas_texto }}</div>
+
+        <!-- AREAS: multiselección (botón que abre panel con casillas). -->
+        <div class="form-item">
+          <label>Áreas involucradas</label>
+          <div class="multiselect" id="areasMulti">
+            <button type="button" class="multiselect-toggle" id="areasToggle">
+              <span id="areasResumen">Selecciona una o varias áreas</span>
+              <span class="multiselect-caret">▾</span>
+            </button>
+            <div class="multiselect-panel" id="areasPanel" hidden>
+              <input type="text" class="multiselect-buscar" id="areasBuscar" placeholder="Buscar área..." autocomplete="off">
+              <ul class="multiselect-opciones" id="areasOpciones">
+                {% for nombre in nombres_areas %}
+                  <li>
+                    <label class="multiselect-opcion">
+                      <input type="checkbox" value="{{ nombre }}"> {{ nombre }}
+                    </label>
+                  </li>
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+          <ul id="areasList" class="tag-list"></ul>
+          {{ formulario.areas_seleccionadas }}
+        </div>
+      </div>
+
+      <button type="submit" class="btn">💾 Guardar cambios</button>
+    </form>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- AVANCES (despues de los datos) -->
+  <!-- ============================================================ -->
+  <div class="card">
+    <h2>Avances</h2>
+    {% for avance in avances %}
+      <div class="avance-item"><strong>{{ avance.hora }}</strong> — {{ avance.texto }}</div>
+    {% empty %}
+      <p>Este incidente todavia no tiene avances.</p>
+    {% endfor %}
+
+    <h3>Agregar avance</h3>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="accion" value="agregar_avance">
+      {{ formulario_avance.as_p }}
+      <button type="submit" class="btn">Agregar avance</button>
+    </form>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- SOLUCION (despues de los avances) -->
+  <!-- ============================================================ -->
+  <div class="card">
+    <h2>Solución</h2>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="accion" value="guardar_solucion">
+      <textarea name="solucion" rows="3" placeholder="Detalle del correctivo aplicado...">{{ incidente.solucion|default:"" }}</textarea>
+      <p><button type="submit" class="btn">Guardar solución</button></p>
+    </form>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- VISTA PREVIA DE WHATSAPP -->
+  <!-- ============================================================ -->
+  <div class="card">
+    <h2>Vista previa WhatsApp</h2>
+
+    <div id="texto-todos" style="display:none;">{{ texto_todos }}</div>
+    <div id="texto-ultimo" style="display:none;">{{ texto_ultimo }}</div>
+
+    <label>
+      <input type="checkbox" id="chkSoloUltimo"> Incluir solo el último avance
+    </label>
+
+    <pre id="vistaPrevia"></pre>
+
+    <!-- Botones al final: copiar y volver, uno al lado del otro. -->
+    <button type="button" id="btnCopiar" class="btn btn-verde">📋 Copiar plantilla</button>
+    <a href="{% url 'lista' %}" class="btn btn-secundario">← Volver atrás</a>
+  </div>
+
+  <script src="{% static 'areas.js' %}?v=2"></script>
+  <script>
+    var textoTodos = document.getElementById('texto-todos').textContent;
+    var textoUltimo = document.getElementById('texto-ultimo').textContent;
+    var chk = document.getElementById('chkSoloUltimo');
+    var vista = document.getElementById('vistaPrevia');
+    var btn = document.getElementById('btnCopiar');
+
+    function actualizarVista() {
+      vista.textContent = chk.checked ? textoUltimo : textoTodos;
+    }
+
+    actualizarVista();
+    chk.addEventListener('change', actualizarVista);
+
+    btn.addEventListener('click', function () {
+      navigator.clipboard.writeText(vista.textContent).then(function () {
+        btn.textContent = '✅ Copiado';
+        setTimeout(function () { btn.textContent = '📋 Copiar plantilla'; }, 2000);
+      });
+    });
+  </script>
+{% endblock %}

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block titulo %}HRAS{% endblock %}</title>
+
+  <!-- La linea de abajo habilita el uso de archivos estaticos (CSS, imagenes). -->
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'style.css' %}?v=11">
+</head>
+<body>
+  <!-- Barra superior comun a todas las paginas. -->
+  <header class="header">
+    <a href="{% url 'inicio' %}" class="btn btn-secundario">🏠 Inicio</a>
+    <h1>🚨 Notificador de Incidentes</h1>
+    <!--
+      Atajos dinamicos: se muestran todas las secciones MENOS la actual.
+      La lista se define en incidentes/context_processors.py (SECCIONES).
+    -->
+    <nav class="header-atajos">
+      {% for atajo in atajos_navegacion %}
+        <a href="{% url atajo.url_name %}" class="btn btn-secundario">{{ atajo.icono }} {{ atajo.etiqueta }}</a>
+      {% endfor %}
+    </nav>
+  </header>
+
+  <main>
+    <!--
+      Cada plantilla hija llenara este "block contenido" con su propio contenido.
+      Asi todas comparten la barra superior, el CSS y la estructura.
+    -->
+    {% block contenido %}{% endblock %}
+  </main>
+</body>
+</html>

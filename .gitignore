@@ -1,0 +1,20 @@
+# ------------------------------------------------------------------
+# Archivos y carpetas que Git NUNCA debe subir.
+# ------------------------------------------------------------------
+
+# Secretos: el .env contiene contraseñas y credenciales. JAMÁS se sube.
+.env
+
+# El entorno virtual (se recrea con un comando, no se sube).
+venv/
+
+# Base de datos local de pruebas.
+db.sqlite3
+
+# Archivos temporales de Python.
+__pycache__/
+*.pyc
+
+# Archivos del sistema / editor.
+.DS_Store
+.vscode/

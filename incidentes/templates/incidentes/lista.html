@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Notificaciones - HRAS{% endblock %}
+
+{% block contenido %}
+  <div class="card">
+    <div class="barra-superior">
+      <h2>Notificaciones</h2>
+
+      <!-- Filtro desplegable. Al cambiar, recarga la pagina con ?filtro=... -->
+      <div>
+        <label for="filtroEstado">Mostrar:</label>
+        <select id="filtroEstado" onchange="location.href='?filtro=' + this.value;">
+          <option value="activos" {% if filtro == 'activos' %}selected{% endif %}>Solo abiertos</option>
+          <option value="cerrados" {% if filtro == 'cerrados' %}selected{% endif %}>Solo resueltos</option>
+          <option value="todos" {% if filtro == 'todos' %}selected{% endif %}>Todos</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Rejilla de tarjetas -->
+    <div class="tarjetas-grid">
+      {% for inc in incidentes %}
+        <!-- La clase de color depende del estado (barra lateral de la tarjeta). -->
+        <div class="tarjeta-inc estado-{{ inc.estado }}">
+          <div class="tarjeta-inc-titulo">
+            {{ inc.ticket|default:"Por generarse" }} - {{ inc.incidente }}
+          </div>
+          <div class="tarjeta-inc-info">
+            Prioridad: {{ inc.prioridad }} | Estado: {{ inc.get_estado_display }}
+          </div>
+          <div class="tarjeta-inc-info">
+            👤 Asignado a: {{ inc.asignado_a|default:"Sin asignar" }}
+          </div>
+
+          <!-- Acciones con iconos. El atributo title muestra el texto al pasar el mouse. -->
+          <div class="tarjeta-inc-acciones">
+            <a href="{% url 'detalle' inc.id %}" title="Ver">👁</a>
+            {% if inc.estado != 'resuelto' %}
+              <a href="{% url 'actualizar' inc.id %}" title="Actualizar">🕐</a>
+              <a href="{% url 'resolver' inc.id %}" title="Resolver">✔</a>
+            {% endif %}
+          </div>
+        </div>
+      {% empty %}
+        <p>No hay notificaciones para mostrar.</p>
+      {% endfor %}
+    </div>
+  </div>
+{% endblock %}

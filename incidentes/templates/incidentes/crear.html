@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block titulo %}Nueva notificación - HRAS{% endblock %}
+
+{% block contenido %}
+  <!-- Layout de dos columnas: formulario a la izquierda, vista previa a la derecha. -->
+  <div class="crear-layout">
+
+    <!-- ================= COLUMNA IZQUIERDA: FORMULARIO ================= -->
+    <div class="card">
+      <h2>Crear nueva notificación</h2>
+
+      <form method="post" id="formIncidente">
+        {% csrf_token %}
+
+        <!-- Rejilla de dos columnas para los campos principales. -->
+        <div class="form-grid">
+          <div class="form-item full">{{ formulario.incidente.label_tag }} {{ formulario.incidente }}</div>
+
+          <div class="form-item">{{ formulario.ticket.label_tag }} {{ formulario.ticket }}</div>
+          <div class="form-item">{{ formulario.hora_inicio.label_tag }} {{ formulario.hora_inicio }}</div>
+
+          <div class="form-item">{{ formulario.prioridad.label_tag }} {{ formulario.prioridad }}</div>
+          <div class="form-item">{{ formulario.estado.label_tag }} {{ formulario.estado }}</div>
+
+          <div class="form-item">{{ formulario.afectacion_cliente.label_tag }} {{ formulario.afectacion_cliente }}</div>
+          <div class="form-item">{{ formulario.como_se_detecto.label_tag }} {{ formulario.como_se_detecto }}</div>
+
+          <div class="form-item">{{ formulario.reporte_inicial.label_tag }} {{ formulario.reporte_inicial }}</div>
+          <div class="form-item">{{ formulario.asignado_a.label_tag }} {{ formulario.asignado_a }}</div>
+
+          <div class="form-item full">{{ formulario.descripcion.label_tag }} {{ formulario.descripcion }}</div>
+
+          <div class="form-item">{{ formulario.personas_texto.label_tag }} {{ formulario.personas_texto }}</div>
+          <div class="form-item">
+            <label>Áreas involucradas</label>
+
+            <!-- Componente multiselección: botón que abre un panel con casillas. -->
+            <div class="multiselect" id="areasMulti">
+              <button type="button" class="multiselect-toggle" id="areasToggle">
+                <span id="areasResumen">Selecciona una o varias áreas</span>
+                <span class="multiselect-caret">▾</span>
+              </button>
+
+              <div class="multiselect-panel" id="areasPanel" hidden>
+                <input type="text" class="multiselect-buscar" id="areasBuscar" placeholder="Buscar área..." autocomplete="off">
+                <ul class="multiselect-opciones" id="areasOpciones">
+                  {% for nombre in nombres_areas %}
+                    <li>
+                      <label class="multiselect-opcion">
+                        <input type="checkbox" value="{{ nombre }}"> {{ nombre }}
+                      </label>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </div>
+            </div>
+
+            <!-- Aqui se muestran las areas ya agregadas como etiquetas. -->
+            <ul id="areasList" class="tag-list"></ul>
+            <!-- Campo oculto real que se envia (lo llena el JavaScript). -->
+            {{ formulario.areas_seleccionadas }}
+          </div>
+
+          <!-- La solucion va al final, ocupando todo el ancho. -->
+          <div class="form-item full">{{ formulario.solucion.label_tag }} {{ formulario.solucion }}</div>
+        </div>
+
+        <button type="submit" class="btn">💾 Guardar notificación</button>
+        <a href="{% url 'lista' %}" class="btn btn-secundario">← Volver atrás</a>
+      </form>
+    </div>
+
+    <!-- ================= COLUMNA DERECHA: VISTA PREVIA ================= -->
+    <div class="card vista-previa-card">
+      <h2>Vista previa</h2>
+      <p class="vista-previa-nota">Así se verá la notificación en WhatsApp. Se actualiza mientras escribes.</p>
+      <pre id="vistaPrevia"></pre>
+    </div>
+
+  </div>
+
+  <!-- Script del componente de areas (multiselección) y de la vista previa. -->
+  <script src="{% static 'areas.js' %}?v=2"></script>
+  <script src="{% static 'vista_previa.js' %}?v=1"></script>
+{% endblock %}

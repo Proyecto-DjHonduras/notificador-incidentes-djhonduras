@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block titulo %}Dashboard Gerencial - HRAS{% endblock %}
+
+{% block contenido %}
+  <div class="card">
+    <h2>Dashboard Gerencial</h2>
+    <p>Vista general del estado de los incidentes. (Se ampliará más adelante.)</p>
+  </div>
+
+  <div class="inicio-tarjetas">
+    <div class="tarjeta">
+      <div class="tarjeta-icono">📦</div>
+      <h3>{{ total }}</h3>
+      <p>Total de incidentes</p>
+    </div>
+    <div class="tarjeta">
+      <div class="tarjeta-icono">🔴</div>
+      <h3>{{ activos }}</h3>
+      <p>Activos</p>
+    </div>
+    <div class="tarjeta">
+      <div class="tarjeta-icono">✅</div>
+      <h3>{{ resueltos }}</h3>
+      <p>Resueltos</p>
+    </div>
+  </div>
+{% endblock %}

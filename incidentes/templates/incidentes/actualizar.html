@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block titulo %}{{ titulo }} - HRAS{% endblock %}
+
+{% block contenido %}
+  <div class="card">
+    <!-- El titulo cambia segun la accion. El emoji 🔄 es decorativo. -->
+    <h2>🔄 {{ titulo }} 🔄</h2>
+
+    <ul>
+      <li><strong>Incidente:</strong> {{ incidente.incidente }}</li>
+      <li><strong>Ticket:</strong> {{ incidente.ticket|default:"Por generarse" }}</li>
+      {% if modo == 'resolver' %}
+        <li><strong>Estado:</strong> Resuelto</li>
+      {% else %}
+        <li><strong>Estado:</strong> {{ incidente.get_estado_display }}</li>
+      {% endif %}
+      <li><strong>Hora inicio de falla:</strong> {{ hora_inicio_txt }}</li>
+      <li><strong>Hora actual:</strong> {% now "d/m/Y H:i" %}</li>
+    </ul>
+
+    <!-- id="formPrincipal" nos permite enviar este formulario desde el boton de copiar. -->
+    <form method="post" id="formPrincipal">
+      {% csrf_token %}
+
+      {% if modo == 'resolver' %}
+        <p><strong>Descripción de la falla:</strong> {{ incidente.descripcion|default:"—" }}</p>
+
+        <label>Solución</label>
+        <textarea name="solucion" rows="3" placeholder="Describe la solución aplicada...">{{ incidente.solucion|default:"" }}</textarea>
+      {% else %}
+        <p><strong>Descripción de la falla:</strong> {{ incidente.descripcion|default:"—" }}</p>
+
+        {{ formulario_avance.as_p }}
+      {% endif %}
+    </form>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- VISTA PREVIA DE WHATSAPP (se arma en vivo mientras escribes) -->
+  <!-- ============================================================ -->
+  <div class="card">
+    <h2>Vista previa WhatsApp</h2>
+    <pre id="vistaPrevia"></pre>
+    <button type="button" id="btnCopiar" class="btn btn-verde">📋 Copiar plantilla</button>
+    <a href="{% url 'lista' %}" class="btn btn-secundario">← Volver atrás</a>
+  </div>
+
+  <script>
+    var modo = "{{ modo }}";
+    var ticketIncidente = "{{ incidente.ticket|default:'Por generarse'|escapejs }}";
+    var nombreIncidente = "{{ incidente.incidente|escapejs }}";
+    var horaInicio = "{{ hora_inicio_txt|escapejs }}";
+    var descripcionFalla = "{{ incidente.descripcion|default:'—'|escapejs }}";
+    // Campo de ticket editable (para reflejarlo en vivo en la vista previa).
+    var campoTicket = document.querySelector('input[name="ticket"]');
+
+    var campoAvance = document.getElementById('id_texto');
+    var campoSolucion = document.querySelector('textarea[name="solucion"]');
+    var vista = document.getElementById('vistaPrevia');
+    var btn = document.getElementById('btnCopiar');
+
+    function ahora() {
+      var d = new Date();
+      function dos(n) { return (n < 10 ? '0' : '') + n; }
+      return dos(d.getDate()) + '/' + dos(d.getMonth() + 1) + '/' + d.getFullYear()
+           + ' ' + dos(d.getHours()) + ':' + dos(d.getMinutes());
+    }
+
+    function actualizarVista() {
+      var lineas = [];
+      if (modo === 'resolver') {
+        lineas.push('✅ *CIERRE DE INCIDENTE* ✅');
+      } else {
+        lineas.push('🔄 *ACTUALIZACIÓN DE INCIDENTE* 🔄');
+      }
+      // Usamos el ticket que este escrito en el campo (si existe) o el guardado.
+      var ticketActual = (campoTicket && campoTicket.value.trim()) ? campoTicket.value.trim() : ticketIncidente;
+      lineas.push('');
+      // Linea unificada: "Incidente: TICKET - Nombre".
+      lineas.push('📌 *Incidente:* ' + ticketActual + ' - ' + nombreIncidente);
+      lineas.push('🕐 *Hora inicio de falla:* ' + horaInicio);
+      lineas.push('');
+      lineas.push('📝 *Descripción:* ' + descripcionFalla);
+      lineas.push('');
+
+      if (modo === 'resolver') {
+        var solucion = campoSolucion ? campoSolucion.value : '';
+        lineas.push('✅ *Solución (' + ahora() + '):*');
+        lineas.push(solucion || '—');
+      } else {
+        var avance = campoAvance ? campoAvance.value : '';
+        lineas.push('🔄 *Avance (' + ahora() + '):*');
+        lineas.push(avance || '—');
+      }
+      vista.textContent = lineas.join('\n');
+    }
+
+    actualizarVista();
+    if (campoAvance) campoAvance.addEventListener('input', actualizarVista);
+    if (campoSolucion) campoSolucion.addEventListener('input', actualizarVista);
+    if (campoTicket) campoTicket.addEventListener('input', actualizarVista);
+
+    // El boton "Copiar plantilla" hace DOS cosas: copia el texto Y guarda el formulario.
+    btn.addEventListener('click', function () {
+      // 1) Copiamos el texto al portapapeles.
+      navigator.clipboard.writeText(vista.textContent).then(function () {
+        btn.textContent = '✅ Copiado, guardando...';
+        // 2) Enviamos el formulario (guarda el avance o resuelve). Esto recarga a la lista.
+        document.getElementById('formPrincipal').submit();
+      }).catch(function () {
+        // Si el copiado falla, igual guardamos.
+        document.getElementById('formPrincipal').submit();
+      });
+    });
+  </script>
+{% endblock %}

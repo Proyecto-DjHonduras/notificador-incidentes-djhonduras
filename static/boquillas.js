@@ -186,4 +186,54 @@
       if (el) editarNombre(el);
     });
   });
+
+  // ---------- BUSCADOR DEL HISTORIAL ----------
+  // Filtra las boquillas por su título (nombre) o por el contenido del mensaje,
+  // en vivo mientras se escribe. No distingue mayúsculas ni acentos.
+  var buscador = document.getElementById('boquillaBuscar');
+  var contador = document.getElementById('boquillaContador');
+  var sinResultados = document.getElementById('boquillaSinResultados');
+  var items = document.querySelectorAll('.boquilla-item');
+
+  // Quita acentos y pasa a minúsculas para comparar de forma flexible.
+  function normalizar(txt) {
+    return (txt || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, ''); // elimina las marcas de acento
+  }
+
+  function filtrar() {
+    var q = normalizar(buscador.value.trim());
+    var visibles = 0;
+
+    Array.prototype.forEach.call(items, function (item) {
+      var nombreEl = item.querySelector('.boquilla-item-nombre');
+      var textoEl = item.querySelector('.boquilla-item-texto');
+      var nombre = normalizar(nombreEl ? (nombreEl.getAttribute('data-nombre') || nombreEl.textContent) : '');
+      var texto = normalizar(textoEl ? textoEl.textContent : '');
+
+      // Coincide si la búsqueda aparece en el título o en el mensaje.
+      var coincide = !q || nombre.indexOf(q) !== -1 || texto.indexOf(q) !== -1;
+      item.style.display = coincide ? '' : 'none';
+      if (coincide) visibles++;
+    });
+
+    // Contador de resultados.
+    if (contador) {
+      if (!q) {
+        contador.textContent = items.length + (items.length === 1 ? ' boquilla' : ' boquillas');
+      } else {
+        contador.textContent = visibles + ' de ' + items.length;
+      }
+    }
+
+    // Mensaje de "sin resultados".
+    if (sinResultados) sinResultados.hidden = (visibles !== 0);
+  }
+
+  if (buscador) {
+    buscador.addEventListener('input', filtrar);
+    filtrar(); // estado inicial (muestra el total)
+  }
 })();

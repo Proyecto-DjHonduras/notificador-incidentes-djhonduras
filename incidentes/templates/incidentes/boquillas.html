@@ -41,6 +41,12 @@
     <h2>Historial de boquillas</h2>
 
     {% if historial %}
+      <!-- Buscador: filtra el historial por título (nombre) o por el contenido del mensaje. -->
+      <div class="boquilla-buscador">
+        <input type="text" id="boquillaBuscar" placeholder="🔎 Buscar por título o palabra del mensaje..." autocomplete="off">
+        <span id="boquillaContador" class="boquilla-contador"></span>
+      </div>
+
       <ul class="boquilla-historial">
         {% for b in historial %}
           <li class="boquilla-item" data-id="{{ b.id }}">
@@ -64,6 +70,8 @@
           </li>
         {% endfor %}
       </ul>
+      <!-- Se muestra solo cuando la búsqueda no encuentra coincidencias. -->
+      <p id="boquillaSinResultados" class="boquilla-vacio" hidden>No hay boquillas que coincidan con la búsqueda.</p>
     {% else %}
       <p class="boquilla-vacio">Aún no hay boquillas guardadas. Escribe una arriba y guárdala.</p>
     {% endif %}
@@ -73,5 +81,5 @@
     </div>
   </div>
 
-  <script src="{% static 'boquillas.js' %}?v=3"></script>
+  <script src="{% static 'boquillas.js' %}?v=4"></script>
 {% endblock %}

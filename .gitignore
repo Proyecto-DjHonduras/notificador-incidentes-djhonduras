@@ -15,6 +15,9 @@ db.sqlite3
 __pycache__/
 *.pyc
 
+# Estaticos recolectados por 'collectstatic' (se generan en el build del servidor).
+staticfiles/
+
 # Archivos del sistema / editor.
 .DS_Store
 .vscode/

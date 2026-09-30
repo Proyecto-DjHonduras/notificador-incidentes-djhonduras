@@ -1,0 +1,22 @@
+# Configuración del servicio en Render (opcional pero recomendada).
+# Render puede leer este archivo para crear el servicio automáticamente.
+# También puedes crear el servicio manualmente desde el panel de Render.
+services:
+  - type: web
+    name: notificador-incidentes-djhonduras
+    runtime: python
+    plan: free
+    # Comandos de construcción y arranque.
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn config.wsgi:application"
+    envVars:
+      # DEBUG desactivado en producción.
+      - key: DEBUG
+        value: "False"
+      # Genera una SECRET_KEY segura automáticamente.
+      - key: SECRET_KEY
+        generateValue: true
+      # El resto (base de datos, ALLOWED_HOSTS) se configuran en el panel
+      # como variables de entorno, porque contienen datos sensibles.
+      - key: PYTHON_VERSION
+        value: "3.12.4"

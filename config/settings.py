@@ -36,9 +36,29 @@ SECRET_KEY = os.environ.get(
 
 # SECURITY WARNING: don't run with debug turned on in production!
 # DEBUG viene del .env como texto ('True'/'False'); lo comparamos para volverlo booleano.
+# En local no hay variable DEBUG -> queda True. En Render pondremos DEBUG=False.
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
+# ALLOWED_HOSTS: dominios/hosts autorizados a servir la app.
+# En local incluimos 127.0.0.1 y localhost. En produccion agregamos el dominio
+# del servidor mediante la variable de entorno ALLOWED_HOSTS (separada por comas).
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+
+_hosts_extra = os.environ.get('ALLOWED_HOSTS', '')
+if _hosts_extra:
+    ALLOWED_HOSTS += [h.strip() for h in _hosts_extra.split(',') if h.strip()]
+
+# Render expone el dominio del servicio en esta variable; lo agregamos solo.
+_render_host = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if _render_host:
+    ALLOWED_HOSTS.append(_render_host)
+
+# CSRF_TRUSTED_ORIGINS: orígenes https confiables para formularios (obligatorio en
+# producción con dominio propio). Se arma a partir de los hosts extra y el de Render.
+CSRF_TRUSTED_ORIGINS = []
+for _h in ([_render_host] if _render_host else []) + \
+          ([h.strip() for h in _hosts_extra.split(',') if h.strip()]):
+    CSRF_TRUSTED_ORIGINS.append('https://' + _h)
 
 
 # Application definition
@@ -57,6 +77,9 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # WhiteNoise sirve los archivos estaticos (CSS/JS) en produccion.
+    # Debe ir justo despues de SecurityMiddleware.
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -99,6 +122,10 @@ DATABASES = {
         'PASSWORD': os.environ.get('DB_PASSWORD'),
         'HOST': os.environ.get('DB_HOST'),
         'PORT': os.environ.get('DB_PORT'),
+        # Supabase exige conexión cifrada (SSL) desde servidores externos.
+        'OPTIONS': {
+            'sslmode': os.environ.get('DB_SSLMODE', 'require'),
+        },
     }
 }
 
@@ -155,12 +182,45 @@ STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
 
+# STATIC_ROOT: carpeta donde 'collectstatic' junta todos los estaticos para
+# servirlos en produccion. Render ejecuta collectstatic durante el build.
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# WhiteNoise: comprime y cachea los estaticos en produccion.
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
+
+# Clave primaria por defecto (evita un warning del check).
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
+# Por ahora el proyecto no envía correos; usamos el backend de consola
+# (los "correos" se imprimen en la terminal). Si más adelante se necesita
+# enviar correos de verdad, se cambia a un backend SMTP.
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
-    },
-}
+
+# ------------------------------------------------------------------
+# Seguridad en PRODUCCIÓN (solo se activa cuando DEBUG = False).
+# En local (DEBUG = True) no aplica, para no forzar HTTPS al desarrollar.
+# ------------------------------------------------------------------
+if not DEBUG:
+    # Redirige todo el tráfico HTTP a HTTPS.
+    SECURE_SSL_REDIRECT = True
+    # Cookies de sesión y CSRF solo por HTTPS.
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    # HSTS: obliga a los navegadores a usar HTTPS (1 año).
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    # Render sirve detrás de un proxy; esto indica que la conexión original es HTTPS.
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

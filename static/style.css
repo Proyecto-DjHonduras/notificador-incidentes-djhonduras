@@ -444,6 +444,17 @@ a.tarjeta:hover {
 }
 .boquilla-acciones { display: flex; gap: 10px; flex-wrap: wrap; }
 
+/* Buscador del historial de boquillas */
+.boquilla-buscador {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.boquilla-buscador input { flex: 1; min-width: 220px; }
+.boquilla-contador { color: var(--texto-suave); font-size: 0.85rem; white-space: nowrap; }
+
 /* Historial de boquillas guardadas */
 .boquilla-historial { list-style: none; padding: 0; margin: 16px 0 0 0; }
 .boquilla-item {

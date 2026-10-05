@@ -46,7 +46,6 @@ class IncidenteForm(forms.ModelForm):
             'estado',
             'afectacion_cliente',
             'como_se_detecto',
-            'reporte_inicial',
             'asignado_a',
             'hora_inicio',
             'descripcion',

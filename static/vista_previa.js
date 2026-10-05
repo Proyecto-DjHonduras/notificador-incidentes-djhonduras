@@ -46,7 +46,6 @@
     lineas.push('👥 *Afectación a cliente:* ' + (texto('afectacion_cliente') || '—'));
     lineas.push('🔺 *Prioridad:* ' + (val('prioridad') || '—'));
     lineas.push('🔍 *¿Cómo se detectó?:* ' + (texto('como_se_detecto') || '—'));
-    lineas.push('📋 *Cómo se detectó el incidente:* ' + (val('reporte_inicial') || '—'));
     lineas.push('');
     lineas.push('🕐 *Hora inicio de falla:* ' + formatoFecha(val('hora_inicio')));
     lineas.push('📌 *Estado:* ' + (texto('estado') || '—'));
@@ -70,15 +69,13 @@
       personas.split(',').map(function (s) { return s.trim(); }).filter(Boolean)
         .forEach(function (p) { lineas.push('- ' + p); });
     }
-    lineas.push('');
 
-    // Avances: en la creación aún no hay, se muestra la sección vacía.
-    lineas.push('*Avances*');
+    // En la creación aún no hay avances, por eso NO mostramos la sección "Avances".
 
-    // Solución (solo si está resuelto).
+    // Solución (solo si está resuelto). Incluimos el estado "Resuelto".
     if (esResuelto) {
       lineas.push('');
-      lineas.push('✅ *Solución:*');
+      lineas.push('✅ *Solución (Resuelto):*');
       lineas.push(val('solucion') || '—');
     }
 

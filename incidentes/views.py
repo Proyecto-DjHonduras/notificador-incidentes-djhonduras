@@ -167,7 +167,6 @@ def generar_texto_whatsapp(incidente, areas, personas, avances, solo_ultimo=Fals
     lineas.append(f'👥 *Afectación a cliente:* {incidente.get_afectacion_cliente_display()}')
     lineas.append(f'🔺 *Prioridad:* {incidente.prioridad}')
     lineas.append(f'🔍 *¿Cómo se detectó?:* {incidente.get_como_se_detecto_display() or "—"}')
-    lineas.append(f'📋 *Cómo se detectó el incidente:* {incidente.reporte_inicial or "—"}')
     lineas.append('')
     lineas.append(f'🕐 *Hora inicio de falla:* {formato(incidente.hora_inicio)}')
     if incidente.estado == 'resuelto':
@@ -190,17 +189,23 @@ def generar_texto_whatsapp(incidente, areas, personas, avances, solo_ultimo=Fals
     lineas.append('')
 
     # Avances: todos, o solo el ultimo, segun la opcion elegida.
-    lineas.append('*Avances*')
+    # Solo mostramos la seccion "Avances" si realmente hay avances
+    # (en la primera notificacion no lleva avances, por eso no aparece).
     lista_avances = list(avances)
     if solo_ultimo and lista_avances:
         lista_avances = [lista_avances[-1]]  # solo el ultimo
-    for avance in lista_avances:
-        lineas.append(f'- 🕐 {formato(avance.hora)}: {avance.texto}')
-
-    # Solucion (solo si esta resuelto).
-    if incidente.estado == 'resuelto':
+    if lista_avances:
+        lineas.append('*Avances*')
+        for avance in lista_avances:
+            lineas.append(f'- 🕐 {formato(avance.hora)}: {avance.texto}')
         lineas.append('')
-        lineas.append('✅ *Solución:*')
+
+    # Solucion (solo si esta resuelto). Incluimos el estado "Resuelto".
+    if incidente.estado == 'resuelto':
+        # Si la ultima linea no quedo vacia, agregamos un separador.
+        if lineas and lineas[-1] != '':
+            lineas.append('')
+        lineas.append('✅ *Solución (Resuelto):*')
         lineas.append(incidente.solucion or '—')
 
     # Unimos todas las lineas con saltos de linea.

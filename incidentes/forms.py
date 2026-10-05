@@ -25,6 +25,23 @@ class IncidenteForm(forms.ModelForm):
         widget=forms.TextInput(attrs={'placeholder': 'Ej: Juan Pérez, María López (separadas por comas)'})
     )
 
+    # HORA INICIO: declaramos el campo explicitamente para controlar los formatos.
+    # input_formats: formatos que ACEPTA al recibir el dato del navegador.
+    # El widget (en Meta) define el formato con el que se MUESTRA el valor.
+    hora_inicio = forms.DateTimeField(
+        label='Hora inicio de falla',
+        required=False,
+        input_formats=['%Y-%m-%dT%H:%M', '%Y-%m-%dT%H:%M:%S'],
+        widget=forms.DateTimeInput(
+            format='%Y-%m-%dT%H:%M',
+            attrs={
+                'type': 'datetime-local',
+                'lang': 'es-HN',
+                'step': 60,
+            },
+        ),
+    )
+
     # Si el ticket viene vacio, lo convertimos a None (NULL en la BD) para que
     # varios incidentes puedan quedar SIN ticket sin chocar con la regla de unicidad.
     # Ademas validamos que el ticket no este repetido y mostramos un mensaje claro.
@@ -68,14 +85,8 @@ class IncidenteForm(forms.ModelForm):
         ]
 
         # widgets nos deja personalizar como se ve cada campo en el HTML.
+        # (hora_inicio se define arriba como campo explicito, no aqui.)
         widgets = {
-            # Selector unico de fecha y hora del navegador (un solo control).
-            # lang='es-HN' y step=60 sugieren 24h y minutos exactos.
-            'hora_inicio': forms.DateTimeInput(attrs={
-                'type': 'datetime-local',
-                'lang': 'es-HN',
-                'step': 60,
-            }),
             'descripcion': forms.Textarea(attrs={'rows': 3}),
             'solucion': forms.Textarea(attrs={'rows': 3}),
         }

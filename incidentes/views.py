@@ -217,9 +217,13 @@ def generar_texto_whatsapp(incidente, areas, personas, avances, solo_ultimo=Fals
 def _form_incidente_precargado(incidente):
     areas_actuales = ', '.join(incidente.areas.values_list('nombre', flat=True))
     personas_actuales = ', '.join(incidente.personas.values_list('nombre', flat=True))
+    # Convertimos la hora guardada (UTC) a hora local de Honduras para que
+    # el input datetime-local muestre la hora correcta con la que se creo.
+    hora_local = timezone.localtime(incidente.hora_inicio) if incidente.hora_inicio else None
     return IncidenteForm(instance=incidente, initial={
         'areas_seleccionadas': areas_actuales,
         'personas_texto': personas_actuales,
+        'hora_inicio': hora_local,
     })
 
 

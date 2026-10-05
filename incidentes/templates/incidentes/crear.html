@@ -75,8 +75,8 @@
             {{ formulario.areas_seleccionadas }}
           </div>
 
-          <!-- La solucion va al final, ocupando todo el ancho. -->
-          <div class="form-item full">{{ formulario.solucion.label_tag }} {{ formulario.solucion }}</div>
+          <!-- El campo "Solución" NO se muestra al crear: aún no hay solución.
+               Se edita después en la pantalla de Ver/Resolver. -->
         </div>
 
         <button type="submit" class="btn">💾 Guardar notificación</button>

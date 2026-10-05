@@ -27,11 +27,26 @@ class IncidenteForm(forms.ModelForm):
 
     # Si el ticket viene vacio, lo convertimos a None (NULL en la BD) para que
     # varios incidentes puedan quedar SIN ticket sin chocar con la regla de unicidad.
+    # Ademas validamos que el ticket no este repetido y mostramos un mensaje claro.
     def clean_ticket(self):
         ticket = self.cleaned_data.get('ticket')
         if ticket:
             ticket = ticket.strip()
-        return ticket or None
+        # Si quedo vacio, lo tratamos como "sin ticket" (NULL) y no validamos duplicado.
+        if not ticket:
+            return None
+
+        # Buscamos si ya existe otro incidente con ese mismo ticket.
+        existentes = Incidente.objects.filter(ticket=ticket)
+        # Si estamos EDITANDO, excluimos el propio incidente de la busqueda.
+        if self.instance and self.instance.pk:
+            existentes = existentes.exclude(pk=self.instance.pk)
+        if existentes.exists():
+            raise forms.ValidationError(
+                f'El ticket "{ticket}" ya existe. Usa un número de ticket diferente.'
+            )
+
+        return ticket
 
     class Meta:
         # A partir de que modelo se construye el formulario.

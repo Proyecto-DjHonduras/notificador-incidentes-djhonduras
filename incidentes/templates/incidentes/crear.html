@@ -14,11 +14,24 @@
       <form method="post" id="formIncidente">
         {% csrf_token %}
 
+        <!-- Mensaje general de error si el formulario no es valido. -->
+        {% if formulario.errors %}
+          <div class="alerta-error">
+            ⚠️ Revisa los campos marcados. No se pudo guardar la notificación.
+          </div>
+        {% endif %}
+
         <!-- Rejilla de dos columnas para los campos principales. -->
         <div class="form-grid">
           <div class="form-item full">{{ formulario.incidente.label_tag }} {{ formulario.incidente }}</div>
 
-          <div class="form-item">{{ formulario.ticket.label_tag }} {{ formulario.ticket }}</div>
+          <div class="form-item">
+            {{ formulario.ticket.label_tag }} {{ formulario.ticket }}
+            <!-- Error especifico del ticket (por ejemplo, ticket duplicado). -->
+            {% if formulario.ticket.errors %}
+              <small class="campo-error">{{ formulario.ticket.errors.0 }}</small>
+            {% endif %}
+          </div>
           <div class="form-item">{{ formulario.hora_inicio.label_tag }} {{ formulario.hora_inicio }}</div>
 
           <div class="form-item">{{ formulario.prioridad.label_tag }} {{ formulario.prioridad }}</div>

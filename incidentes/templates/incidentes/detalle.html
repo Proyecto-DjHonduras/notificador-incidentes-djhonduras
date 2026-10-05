@@ -17,7 +17,12 @@
       <div class="form-grid">
         <div class="form-item full">{{ formulario.incidente.label_tag }} {{ formulario.incidente }}</div>
 
-        <div class="form-item">{{ formulario.ticket.label_tag }} {{ formulario.ticket }}</div>
+        <div class="form-item">
+          {{ formulario.ticket.label_tag }} {{ formulario.ticket }}
+          {% if formulario.ticket.errors %}
+            <small class="campo-error">{{ formulario.ticket.errors.0 }}</small>
+          {% endif %}
+        </div>
         <div class="form-item">{{ formulario.hora_inicio.label_tag }} {{ formulario.hora_inicio }}</div>
 
         <div class="form-item">{{ formulario.prioridad.label_tag }} {{ formulario.prioridad }}</div>

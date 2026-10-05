@@ -48,10 +48,14 @@
 
   <script>
     var modo = "{{ modo }}";
-    // Texto BASE con TODOS los campos (lo arma el backend con generar_texto_whatsapp).
-    // El JS solo le AGREGA en vivo la linea del avance o de la solucion.
-    // Usamos comillas dobles + escapejs: escapa saltos de linea y comillas de forma segura.
-    var textoBase = "{{ texto_base|escapejs }}";
+    var ticketIncidente = "{{ incidente.ticket|default:'Por generarse'|escapejs }}";
+    var nombreIncidente = "{{ incidente.incidente|escapejs }}";
+    var horaInicio = "{{ hora_inicio_txt|escapejs }}";
+    var descripcionFalla = "{{ incidente.descripcion|default:'—'|escapejs }}";
+    // Estado a mostrar: en modo resolver es "Resuelto"; en actualizar, el estado actual.
+    var estadoIncidente = (modo === 'resolver') ? 'Resuelto' : "{{ incidente.get_estado_display|escapejs }}";
+    // Campo de ticket editable (para reflejarlo en vivo en la vista previa).
+    var campoTicket = document.querySelector('input[name="ticket"]');
 
     var campoAvance = document.getElementById('id_texto');
     var campoSolucion = document.querySelector('textarea[name="solucion"]');
@@ -66,24 +70,39 @@
     }
 
     function actualizarVista() {
-      // Partimos del texto completo generado por el servidor.
-      var texto = textoBase;
+      var lineas = [];
+      if (modo === 'resolver') {
+        lineas.push('✅ *CIERRE DE INCIDENTE* ✅');
+      } else {
+        lineas.push('🔄 *ACTUALIZACIÓN DE INCIDENTE* 🔄');
+      }
+      // Usamos el ticket que este escrito en el campo (si existe) o el guardado.
+      var ticketActual = (campoTicket && campoTicket.value.trim()) ? campoTicket.value.trim() : ticketIncidente;
+      lineas.push('');
+      // Linea unificada: "Incidente: TICKET - Nombre".
+      lineas.push('📌 *Incidente:* ' + ticketActual + ' - ' + nombreIncidente);
+      lineas.push('🕐 *Hora inicio de falla:* ' + horaInicio);
+      lineas.push('📌 *Estado:* ' + estadoIncidente);
+      lineas.push('');
+      lineas.push('📝 *Descripción:* ' + descripcionFalla);
+      lineas.push('');
 
       if (modo === 'resolver') {
         var solucion = campoSolucion ? campoSolucion.value : '';
-        texto += '\n\n✅ *Solución (Resuelto - ' + ahora() + '):*';
-        texto += '\n' + (solucion || '—');
+        lineas.push('✅ *Solución (Resuelto - ' + ahora() + '):*');
+        lineas.push(solucion || '—');
       } else {
         var avance = campoAvance ? campoAvance.value : '';
-        texto += '\n\n🔄 *Avance (' + ahora() + '):*';
-        texto += '\n' + (avance || '—');
+        lineas.push('🔄 *Avance (' + ahora() + '):*');
+        lineas.push(avance || '—');
       }
-      vista.textContent = texto;
+      vista.textContent = lineas.join('\n');
     }
 
     actualizarVista();
     if (campoAvance) campoAvance.addEventListener('input', actualizarVista);
     if (campoSolucion) campoSolucion.addEventListener('input', actualizarVista);
+    if (campoTicket) campoTicket.addEventListener('input', actualizarVista);
 
     // El boton "Copiar plantilla" hace DOS cosas: copia el texto Y guarda el formulario.
     btn.addEventListener('click', function () {

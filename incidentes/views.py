@@ -142,12 +142,14 @@ def crear_incidente(request):
 
 # Funcion que arma el texto listo para WhatsApp de un incidente.
 # solo_ultimo=True -> incluye solo el ultimo avance; False -> incluye todos.
-def generar_texto_whatsapp(incidente, areas, personas, avances, solo_ultimo=False):
-    # Encabezado segun el estado.
-    if incidente.estado == 'resuelto':
-        encabezado = '✅ *CIERRE DE INCIDENTE* ✅'
-    else:
-        encabezado = '⚠️ *INICIO DE INCIDENTE* ⚠️'
+def generar_texto_whatsapp(incidente, areas, personas, avances, solo_ultimo=False,
+                           encabezado=None, incluir_solucion=True):
+    # Encabezado: si no se pasa uno explicito, se elige segun el estado.
+    if encabezado is None:
+        if incidente.estado == 'resuelto':
+            encabezado = '✅ *CIERRE DE INCIDENTE* ✅'
+        else:
+            encabezado = '⚠️ *INICIO DE INCIDENTE* ⚠️'
 
     # Formato de fecha/hora en 24h, convertido a la zona horaria del proyecto (Honduras).
     # timezone.localtime() convierte la hora guardada (UTC) a America/Tegucigalpa.
@@ -201,7 +203,8 @@ def generar_texto_whatsapp(incidente, areas, personas, avances, solo_ultimo=Fals
         lineas.append('')
 
     # Solucion (solo si esta resuelto). Incluimos el estado "Resuelto".
-    if incidente.estado == 'resuelto':
+    # incluir_solucion=False la omite (se usa cuando el JS la agrega en vivo).
+    if incluir_solucion and incidente.estado == 'resuelto':
         # Si la ultima linea no quedo vacia, agregamos un separador.
         if lineas and lineas[-1] != '':
             lineas.append('')
@@ -319,6 +322,18 @@ def actualizar_incidente(request, incidente_id):
     # Hora de inicio en texto (24h) para la vista previa.
     hora_inicio_txt = incidente.hora_inicio.strftime('%d/%m/%Y %H:%M') if incidente.hora_inicio else '—'
 
+    # Texto BASE completo (todos los campos) para la vista previa.
+    # Encabezado de "actualización" y SIN la seccion de solucion/avance
+    # (el JavaScript le agrega en vivo la linea del avance).
+    areas = incidente.areas.all()
+    personas = incidente.personas.all()
+    avances = incidente.avances.all()
+    texto_base = generar_texto_whatsapp(
+        incidente, areas, personas, avances,
+        encabezado='🔄 *ACTUALIZACIÓN DE INCIDENTE* 🔄',
+        incluir_solucion=False,
+    )
+
     # Reutilizamos una misma plantilla para actualizar y resolver,
     # cambiando el titulo y el modo con estas variables.
     return render(request, 'incidentes/actualizar.html', {
@@ -328,6 +343,7 @@ def actualizar_incidente(request, incidente_id):
         'modo': 'actualizar',
         'hora_inicio_txt': hora_inicio_txt,
         'permite_editar_ticket': True,
+        'texto_base': texto_base,
     })
 
 
@@ -351,9 +367,25 @@ def resolver_incidente(request, incidente_id):
 
     hora_inicio_txt = incidente.hora_inicio.strftime('%d/%m/%Y %H:%M') if incidente.hora_inicio else '—'
 
+    # Texto BASE completo para la vista previa de cierre.
+    # Mostramos el estado como "Resuelto" sin guardar aun en la base
+    # (cambio solo en memoria). La hora fin de falla sera "ahora".
+    areas = incidente.areas.all()
+    personas = incidente.personas.all()
+    avances = incidente.avances.all()
+    incidente.estado = 'resuelto'
+    if not incidente.fecha_cierre:
+        incidente.fecha_cierre = timezone.now()
+    texto_base = generar_texto_whatsapp(
+        incidente, areas, personas, avances,
+        encabezado='✅ *CIERRE DE INCIDENTE* ✅',
+        incluir_solucion=False,  # la solucion la agrega el JS en vivo
+    )
+
     return render(request, 'incidentes/actualizar.html', {
         'incidente': incidente,
         'titulo': 'Incidente Resuelto',
         'modo': 'resolver',
         'hora_inicio_txt': hora_inicio_txt,
+        'texto_base': texto_base,
     })

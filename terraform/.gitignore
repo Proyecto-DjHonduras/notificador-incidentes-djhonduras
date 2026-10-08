@@ -1,0 +1,25 @@
+# ============================================================
+# .gitignore de Terraform
+# ------------------------------------------------------------
+# Qué NO debe subirse a GitHub desde la carpeta terraform/.
+# ============================================================
+
+# Archivo con los VALORES reales (incluye secretos como la
+# contraseña de Supabase). NUNCA se sube.
+terraform.tfvars
+
+# Estado de Terraform: puede contener datos sensibles.
+# (En la Fase 4 lo moveremos a un backend remoto en S3.)
+*.tfstate
+*.tfstate.*
+
+# Carpeta interna donde Terraform descarga los providers (pesada).
+.terraform/
+.terraform.lock.hcl
+
+# Archivos de planes guardados.
+*.tfplan
+
+# Archivos de crash de Terraform.
+crash.log
+crash.*.log

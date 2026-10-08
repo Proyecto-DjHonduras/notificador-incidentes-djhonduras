@@ -1,0 +1,32 @@
+# ============================================================
+# .dockerignore: lo que NO se copia dentro de la imagen Docker.
+# Igual que .gitignore, pero para la construcción de la "caja".
+# Sirve para: 1) no meter secretos, 2) que la imagen sea liviana.
+# ============================================================
+
+# Secretos: JAMÁS deben entrar a la imagen.
+.env
+
+# Entorno virtual local (la imagen instala sus propias dependencias).
+venv/
+
+# Base de datos local de pruebas.
+db.sqlite3
+
+# Estáticos recolectados (la imagen los genera con collectstatic).
+staticfiles/
+
+# Archivos temporales de Python.
+__pycache__/
+*.pyc
+
+# Carpeta de git (no hace falta dentro de la imagen).
+.git/
+.gitignore
+
+# Archivos de editor / sistema.
+.vscode/
+.DS_Store
+
+# Documentación y config que no afecta a la app en ejecución.
+docs/

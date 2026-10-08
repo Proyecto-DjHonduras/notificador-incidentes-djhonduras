@@ -1,0 +1,29 @@
+# ============================================================
+# terraform.tfvars.example
+# ------------------------------------------------------------
+# PLANTILLA de los valores de las variables. Este archivo SÍ se
+# sube a git (no tiene secretos reales), para documentar qué
+# valores hay que rellenar.
+#
+# CÓMO USARLO:
+#   1. Copiar este archivo como "terraform.tfvars".
+#   2. Rellenar con los valores REALES (los mismos que en Render).
+#   3. El archivo "terraform.tfvars" NO se sube a git (está en .gitignore).
+# ============================================================
+
+# --- General ---
+region   = "us-east-1"
+proyecto = "notificador-incidentes"
+
+# --- Django ---
+debug         = "False"
+secret_key    = "PON_AQUI_UNA_CLAVE_SECRETA_LARGA"
+allowed_hosts = "*"
+
+# --- Base de datos (Supabase) ---
+db_name     = "postgres"
+db_user     = "PON_AQUI_EL_USUARIO"
+db_password = "PON_AQUI_LA_CONTRASENA"
+db_host     = "PON_AQUI_EL_HOST"
+db_port     = "5432"
+db_sslmode  = "require"

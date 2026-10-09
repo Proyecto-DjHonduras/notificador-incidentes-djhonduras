@@ -298,7 +298,160 @@ entorno se dejan en `~/.bashrc`. Si en el futuro `terraform` no responde, basta 
 
 ## FASE 3 — Infraestructura con Terraform
 
-> Pendiente.
+Objetivo: crear la infraestructura real de la app en AWS con Terraform:
+primero el **ECR** (bodega de imágenes) y después **App Runner** (corre la app).
+
+### Terraform vs. Render vs. App Runner (aclaración clave)
+
+- **Render** (hoy) = aloja y CORRE la app.
+- **App Runner** (AWS) = el equivalente a Render: alojará y correrá la app.
+- **ECR** (AWS) = la bodega donde se guarda la imagen Docker (la "caja").
+- **Terraform** = NO corre la app; es el "constructor" que CREA App Runner, ECR y
+  permisos, escribiéndolo como código (en vez de hacer clics como en Render).
+
+Resumen: App Runner reemplaza a Render; Terraform es la herramienta que lo construye.
+
+### Repaso: imagen vs. ECR
+
+- **Imagen** = la "caja" con la app empaquetada (concepto de la Fase 1).
+- **ECR** = la bodega de AWS donde se GUARDA esa caja. App Runner la saca de ahí y la
+  ejecuta (contenedor). ECR es a las imágenes lo que GitHub es al código.
+
+### Sintaxis de Terraform (HCL)
+
+Bloques con forma: `TIPO "etiqueta" { argumento = valor }`. Los principales:
+- `provider` → configura la conexión a una nube.
+- `resource "tipo" "nombre_interno"` → crea algo (lleva tipo + apodo interno).
+- `variable "x"` → declara una "casilla" para un valor.
+- Para USAR una variable: `var.x`.
+- Para referir un recurso: `tipo.nombre_interno.atributo`.
+
+### Lógica de la carpeta `terraform/`
+
+- Terraform lee TODOS los `.tf` de la carpeta como si fueran UN SOLO archivo.
+- Separar en varios archivos es solo por ORDEN humano (no cambia el resultado).
+- Los archivos se CONECTAN por referencias (`var.x`, `tipo.nombre.atributo`).
+- El ORDEN de archivos/bloques NO importa: Terraform calcula solo las dependencias
+  (grafo de dependencias). Sabe que para el output del ECR, primero crea el ECR.
+- La carpeta va DENTRO del proyecto para tener app + infraestructura en el mismo repo.
+
+Archivos creados en `terraform/`:
+
+| Archivo | Para qué | ¿Sube a git? |
+|---------|----------|--------------|
+| `providers.tf` | Configura AWS y el plugin (provider) | Sí |
+| `variables.tf` | Declara las variables ("casillas") | Sí |
+| `ecr.tf` | Crea el repositorio ECR (bodega de imágenes) | Sí |
+| `outputs.tf` | Muestra la URL del ECR al terminar | Sí |
+| `terraform.tfvars.example` | Plantilla de valores (SIN secretos) | Sí |
+| `.gitignore` | Protege secretos y archivos internos | Sí |
+| `terraform.tfvars` | Valores REALES con secretos | **NO** (se crea en CloudShell) |
+
+Cómo se conectan (ejemplo real):
+- `variables.tf` define `region` y `proyecto`.
+- `providers.tf` usa `var.region` para saber dónde crear.
+- `ecr.tf` usa `var.proyecto` para nombrar el repositorio.
+- `outputs.tf` saca `aws_ecr_repository.app.repository_url` del recurso de `ecr.tf`.
+
+### Variables y secretos (`.tfvars`)
+
+- `variables.tf` = las "casillas vacías" (declaración). No tiene valores reales.
+- `terraform.tfvars` = las casillas RELLENAS con valores reales (incluye secretos).
+- Variables con `sensitive = true` (ej. `secret_key`, `db_password`) se OCULTAN en pantalla.
+- Por ahora los secretos van en `terraform.tfvars` (simple, para aprender). Ese archivo
+  NO sube a git. En la FASE 4 se mejora usando AWS Secrets Manager (lo profesional).
+
+### Flujo de trabajo (GitHub ↔ CloudShell ↔ AWS)
+
+```
+  TU PC (escribes los .tf)
+     | git push
+     v
+  GITHUB (guarda los "planos" .tf)
+     | git clone / pull
+     v
+  CLOUDSHELL (tiene Terraform) --- terraform init/plan/apply --->  AWS construye ECR
+```
+
+Los `.tf` son solo "planos"; no construyen nada solos. Terraform (en CloudShell) los lee
+y le ordena a AWS crear los recursos.
+
+### Pasos realizados
+
+- [x] Crear carpeta `terraform/` con: providers.tf, variables.tf, ecr.tf, outputs.tf,
+  terraform.tfvars.example y .gitignore (bien comentados).
+- [x] Subir los `.tf` a GitHub (`git push`). Commit "Agregar infraestructura Terraform".
+- [x] CloudShell: clonar el repo (`git clone`).
+- [x] CloudShell: crear `terraform.tfvars` con los valores reales (secretos).
+- [x] CloudShell: `terraform init / plan / apply` → **ECR creado**.
+  - URL del ECR: `032916962499.dkr.ecr.us-east-1.amazonaws.com/notificador-incidentes`
+- [x] Construir la imagen Docker (`docker build`) y subirla al ECR (`docker push`).
+  - Imagen de 193 MB subida con tag `latest`.
+- [ ] Agregar App Runner (siguiente tanda) y obtener la URL pública.
+
+### Comandos usados (ECR + imagen)
+
+```bash
+# En ~/notificador-incidentes-djhonduras/terraform
+terraform init
+terraform plan
+terraform apply   # escribir 'yes'
+# Output: ecr_repository_url = 032916962499.dkr.ecr.us-east-1.amazonaws.com/notificador-incidentes
+
+# Autenticar Docker con ECR
+aws ecr get-login-password --region us-east-1 \
+  | docker login --username AWS --password-stdin 032916962499.dkr.ecr.us-east-1.amazonaws.com
+
+# Construir, etiquetar y subir la imagen (desde la raiz del repo, donde esta el Dockerfile)
+cd ~/notificador-incidentes-djhonduras
+docker build -t notificador-incidentes .
+docker tag notificador-incidentes:latest 032916962499.dkr.ecr.us-east-1.amazonaws.com/notificador-incidentes:latest
+docker push 032916962499.dkr.ecr.us-east-1.amazonaws.com/notificador-incidentes:latest
+```
+
+### Problema encontrado y solución: "no space left on device"
+
+**Síntoma:** `terraform init` falló al instalar el provider de AWS con el error
+`no space left on device`, pese a que `df -h /home` mostraba 9 GB libres.
+
+**Causa real:** el almacenamiento PERSISTENTE de CloudShell (`/home/cloudshell-user`,
+visto como `/dev/loop0`) es de solo **~1 GB** y estaba al 81%. Las particiones grandes
+(16 GB, 30 GB) son del sistema y no cuentan para el home. El provider de AWS pesa cientos
+de MB y no cabía.
+
+**Solución aplicada:**
+1. Borrar la carpeta de práctica anterior (`rm -rf ~/practica-terraform`, liberó 789 MB).
+2. Borrar el `.zip` de Terraform ya usado (`rm -f ~/*.zip`).
+3. CLAVE: mover el caché de providers a `/tmp` (partición grande del sistema):
+   ```bash
+   mkdir -p /tmp/tf-plugin-cache
+   export TF_PLUGIN_CACHE_DIR=/tmp/tf-plugin-cache
+   echo 'export TF_PLUGIN_CACHE_DIR=/tmp/tf-plugin-cache' >> ~/.bashrc
+   ```
+   Con esto el provider se descarga en `/tmp` (que no satura el home de 1 GB).
+
+**Lección:** en CloudShell el home persistente es de ~1 GB. Para Terraform conviene mantener
+`TF_PLUGIN_CACHE_DIR=/tmp/tf-plugin-cache`. Como `/tmp` se vacía entre sesiones, un `init`
+futuro redescarga el provider (es aceptable). El repo clonado también ocupa espacio (incluía
+`venv`), conviene no clonar carpetas pesadas innecesarias.
+
+### Problema con nano (editar terraform.tfvars)
+
+- Al guardar en nano, quedó atascado en "File Name to Write: terraform.tfvars". Solución:
+  pulsar **Enter** (confirma el nombre) y luego **Ctrl+X** (salir).
+- La `secret_key` había quedado con el placeholder. Se corrigió sin reabrir nano, generando
+  una clave y reemplazando solo esa línea con `sed`:
+  ```bash
+  python3 -c "import secrets; print(secrets.token_urlsafe(50))"
+  sed -i 's|^secret_key.*|secret_key    = "LA_CLAVE_GENERADA"|' terraform.tfvars
+  ```
+- Verificar sin exponer secretos (muestra longitudes, no valores):
+  ```bash
+  awk -F'=' '/^(secret_key|db_user|db_password|db_host)/ {gsub(/ /,"",$1); print $1" -> "length($2)" caracteres"}' terraform.tfvars
+  ```
+
+> Estado: ECR creado y con la imagen dentro. La app en Render sigue intacta.
+> Falta crear App Runner para que corra la imagen y dé la URL pública.
 
 ---
 

@@ -15,3 +15,11 @@ output "ecr_repository_url" {
   # Sintaxis: tipo.nombre_interno.atributo
   value = aws_ecr_repository.app.repository_url
 }
+
+# URL pública de la app, que da App Runner al crear el servicio.
+# Es la dirección donde se podrá abrir la aplicación en el navegador.
+output "app_url" {
+  description = "URL pública de la aplicación en App Runner."
+  # App Runner entrega el dominio sin 'https://', así que lo anteponemos.
+  value = "https://${aws_apprunner_service.app.service_url}"
+}

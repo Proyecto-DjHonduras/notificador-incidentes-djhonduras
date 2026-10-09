@@ -94,15 +94,16 @@ resource "aws_apprunner_service" "app" {
   }
 
   # --- Chequeo de salud ---
-  # App Runner revisa que la app responda. Usamos HTTP sobre la ruta "/"
-  # (la página de inicio de la app) con márgenes amplios para dar tiempo
-  # a que gunicorn + Django terminen de arrancar antes de declararlo sano.
+  # Usamos TCP: App Runner solo comprueba que el puerto 8080 ACEPTE conexión,
+  # sin hacer una petición HTTP. Esto es importante porque la app tiene
+  # SECURE_SSL_REDIRECT=True (con DEBUG=False), que redirige las peticiones
+  # HTTP a HTTPS con un 301; un health check HTTP interno recibiría ese 301 y
+  # marcaría la app como "no sana", reiniciándola en bucle. Con TCP se evita.
   health_check_configuration {
-    protocol            = "HTTP"
-    path                = "/"
+    protocol            = "TCP"
     interval            = 10 # cada 10 s
-    timeout             = 5  # espera hasta 5 s por respuesta
-    healthy_threshold   = 1  # 1 respuesta OK = sano
+    timeout             = 5  # espera hasta 5 s
+    healthy_threshold   = 1  # 1 OK = sano
     unhealthy_threshold = 5  # 5 fallos seguidos = no sano
   }
 }
